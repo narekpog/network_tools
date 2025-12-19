@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:logging/logging.dart';
 import 'package:network_tools/src/models/arp_data.dart';
@@ -25,6 +26,20 @@ class ARPTableHelper {
       arpLogger.warning("ARP command is not supported on mobile platforms.");
       return [];
     }
+
+    if (Platform.isWindows) {
+      final windir = Platform.environment['WINDIR'];
+      if (windir != null) {
+        final snmp = File('$windir\\System32\\snmpapi.dll');
+        if (!snmp.existsSync()) {
+          arpLogger.warning(
+            'snmpapi.dll missing → skipping arp.exe on Windows',
+          );
+          return [];
+        }
+      }
+    }
+
     final result = Process.runSync('arp', ['-a']);
     if (result.exitCode != 0) {
       arpLogger.severe("Failed to execute ARP command: ${result.stderr}");
